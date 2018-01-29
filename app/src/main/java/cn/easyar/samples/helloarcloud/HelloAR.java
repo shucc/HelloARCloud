@@ -42,7 +42,7 @@ public class HelloAR {
     private CameraFrameStreamer streamer;
     private ArrayList<ImageTracker> trackers;
     private Renderer videobg_renderer;
-    private BoxRenderer box_renderer;
+    private ImageRenderer box_renderer;
     private CloudRecognizer cloud_recognizer;
     private boolean viewport_changed = false;
     private Vec2I view_size = new Vec2I(0, 0);
@@ -169,7 +169,7 @@ public class HelloAR {
             videobg_renderer.dispose();
         }
         videobg_renderer = new Renderer();
-        box_renderer = new BoxRenderer();
+        box_renderer = new ImageRenderer();
         box_renderer.init();
     }
 
