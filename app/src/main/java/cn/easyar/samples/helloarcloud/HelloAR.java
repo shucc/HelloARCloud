@@ -9,6 +9,7 @@
 package cn.easyar.samples.helloarcloud;
 
 import android.opengl.GLES20;
+import android.util.Base64;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -59,7 +60,6 @@ public class HelloAR {
         streamer.attachCamera(camera);
         cloud_recognizer = new CloudRecognizer();
         cloud_recognizer.attachStreamer(streamer);
-
         boolean status = true;
         status &= camera.open(CameraDeviceType.Default);
         camera.setSize(new Vec2I(1280, 720));
@@ -106,14 +106,12 @@ public class HelloAR {
                 }
             }
         });
-
         if (!status) {
             return status;
         }
         ImageTracker tracker = new ImageTracker();
         tracker.attachStreamer(streamer);
         trackers.add(tracker);
-
         return status;
     }
 
@@ -205,7 +203,6 @@ public class HelloAR {
     public void render() {
         GLES20.glClearColor(1.f, 1.f, 1.f, 1.f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-
         if (videobg_renderer != null) {
             Vec4I default_viewport = new Vec4I(0, 0, view_size.data[0], view_size.data[1]);
             GLES20.glViewport(default_viewport.data[0], default_viewport.data[1], default_viewport.data[2], default_viewport.data[3]);
@@ -213,7 +210,6 @@ public class HelloAR {
                 return;
             }
         }
-
         if (streamer == null) {
             return;
         }
@@ -221,22 +217,22 @@ public class HelloAR {
         try {
             updateViewport();
             GLES20.glViewport(viewport.data[0], viewport.data[1], viewport.data[2], viewport.data[3]);
-
             if (videobg_renderer != null) {
                 videobg_renderer.render(frame, viewport);
             }
-
             for (TargetInstance targetInstance : frame.targetInstances()) {
                 int status = targetInstance.status();
                 if (status == TargetStatus.Tracked) {
                     Target target = targetInstance.target();
-                    Log.d(TAG, "render: " + target.name());
+                    Log.d(TAG, "render: " + target.meta());
+                    String metaStr = new String(Base64.decode(target.meta().getBytes(), Base64.DEFAULT));
+                    Log.d(TAG, "render: " + metaStr);
                     ImageTarget imagetarget = target instanceof ImageTarget ? (ImageTarget) (target) : null;
                     if (imagetarget == null) {
                         continue;
                     }
                     if (box_renderer != null) {
-                        box_renderer.render(camera.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size());
+                        box_renderer.render(camera.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size(), metaStr);
                     }
                 }
             }

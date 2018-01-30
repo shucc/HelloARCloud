@@ -25,7 +25,6 @@ import java.util.HashMap;
 
 import cn.easyar.Engine;
 
-
 public class MainActivity extends AppCompatActivity {
     /*
     * Steps to create the key for this sample:
@@ -47,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
         if (!Engine.initialize(this, key)) {
             Log.e("HelloAR", "Initialization Failed.");
         }

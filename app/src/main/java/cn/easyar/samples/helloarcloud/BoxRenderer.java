@@ -142,8 +142,14 @@ public class BoxRenderer {
         vbo_coord_box = generateOneBuffer();
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo_coord_box);
         float cube_vertices[][] = {
-            /* +z */{1.0f / 2, 1.0f / 2, 0.01f / 2}, {1.0f / 2, -1.0f / 2, 0.01f / 2}, {-1.0f / 2, -1.0f / 2, 0.01f / 2}, {-1.0f / 2, 1.0f / 2, 0.01f / 2},
-            /* -z */{1.0f / 2, 1.0f / 2, -0.01f / 2}, {1.0f / 2, -1.0f / 2, -0.01f / 2}, {-1.0f / 2, -1.0f / 2, -0.01f / 2}, {-1.0f / 2, 1.0f / 2, -0.01f / 2}
+                {1.0f / 2, 1.0f / 2, 0.01f / 2},
+                {1.0f / 2, -1.0f / 2, 0.01f / 2},
+                {-1.0f / 2, -1.0f / 2, 0.01f / 2},
+                {-1.0f / 2, 1.0f / 2, 0.01f / 2},
+                {1.0f / 2, 1.0f / 2, -0.01f / 2},
+                {1.0f / 2, -1.0f / 2, -0.01f / 2},
+                {-1.0f / 2, -1.0f / 2, -0.01f / 2},
+                {-1.0f / 2, 1.0f / 2, -0.01f / 2}
         };
         FloatBuffer cube_vertices_buffer = FloatBuffer.wrap(flatten(cube_vertices));
         GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, cube_vertices_buffer.limit() * 4, cube_vertices_buffer, GLES20.GL_DYNAMIC_DRAW);
@@ -151,8 +157,15 @@ public class BoxRenderer {
         vbo_color_box = generateOneBuffer();
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo_color_box);
         int cube_vertex_colors[][] = {
-                {255, 0, 0, 128}, {0, 255, 0, 128}, {0, 0, 255, 128}, {0, 0, 0, 128},
-                {0, 255, 255, 128}, {255, 0, 255, 128}, {255, 255, 0, 128}, {255, 255, 255, 128}};
+                {255, 0, 0, 128},
+                {0, 255, 0, 128},
+                {0, 0, 255, 128},
+                {0, 0, 0, 128},
+                {0, 255, 255, 128},
+                {255, 0, 255, 128},
+                {255, 255, 0, 128},
+                {255, 255, 255, 128}
+        };
         ByteBuffer cube_vertex_colors_buffer = ByteBuffer.wrap(byteArrayFromIntArray(flatten(cube_vertex_colors)));
         GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, cube_vertex_colors_buffer.limit(), cube_vertex_colors_buffer, GLES20.GL_STATIC_DRAW);
 
@@ -180,8 +193,15 @@ public class BoxRenderer {
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo_coord_box);
         float height = size0 / 1000;
         float cube_vertices[][] = {
-            /* +z */{size0 / 2, size1 / 2, height / 2}, {size0 / 2, -size1 / 2, height / 2}, {-size0 / 2, -size1 / 2, height / 2}, {-size0 / 2, size1 / 2, height / 2},
-            /* -z */{size0 / 2, size1 / 2, 0}, {size0 / 2, -size1 / 2, 0}, {-size0 / 2, -size1 / 2, 0}, {-size0 / 2, size1 / 2, 0}};
+                {size0 / 2, size1 / 2, height / 2},
+                {size0 / 2, -size1 / 2, height / 2},
+                {-size0 / 2, -size1 / 2, height / 2},
+                {-size0 / 2, size1 / 2, height / 2},
+                {size0 / 2, size1 / 2, 0},
+                {size0 / 2, -size1 / 2, 0},
+                {-size0 / 2, -size1 / 2, 0},
+                {-size0 / 2, size1 / 2, 0}
+        };
         FloatBuffer cube_vertices_buffer = FloatBuffer.wrap(flatten(cube_vertices));
         GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, cube_vertices_buffer.limit() * 4, cube_vertices_buffer, GLES20.GL_DYNAMIC_DRAW);
 

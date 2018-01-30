@@ -9,6 +9,7 @@
 package cn.easyar.samples.helloarcloud;
 
 import android.content.Context;
+import android.graphics.PixelFormat;
 import android.opengl.GLSurfaceView;
 
 import javax.microedition.khronos.egl.EGL10;
@@ -33,7 +34,9 @@ public class GLView extends GLSurfaceView {
         this.cloud_secret = cloud_secret;
 
         setEGLContextFactory(new ContextFactory());
-        setEGLConfigChooser(new ConfigChooser());
+        setEGLConfigChooser(8, 8, 8, 8, 16, 0);
+        getHolder().setFormat(PixelFormat.TRANSLUCENT);
+        setZOrderOnTop(true);
 
         helloAR = new HelloAR();
 

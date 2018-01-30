@@ -1,13 +1,21 @@
 package cn.easyar.samples.helloarcloud;
 
+import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
-import android.opengl.Matrix;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -21,13 +29,9 @@ import cn.easyar.Vec2F;
  */
 public class ImageRenderer {
 
-    private final float[] sPos = new float[]{
-            -1.0f, 1.0f,    //左上角
-            -1.0f, -1.0f,   //左下角
-            1.0f, 1.0f,     //右上角
-            1.0f, -1.0f     //右下角
-    };
+    private final String TAG = getClass().getName();
 
+    //纹理坐标
     private final float[] sCoord = new float[]{
             0.0f, 0.0f,
             0.0f, 1.0f,
@@ -35,7 +39,8 @@ public class ImageRenderer {
             1.0f, 1.0f
     };
 
-    private FloatBuffer bPos;
+    private FloatBuffer rightPos;
+    private FloatBuffer leftPos;
     private FloatBuffer bCoord;
 
     private Bitmap bitmap;
@@ -43,20 +48,12 @@ public class ImageRenderer {
     private int glPosition;
     private int glCoordinate;
     private int glTexture;
-    private int pos_trans_box;
-    private int pos_proj_box;
+    private int glTrans;
+    private int glProject;
+
+    private String nowContent;
 
     public ImageRenderer() {
-        try {
-            bitmap = BitmapFactory.decodeStream(App.getInstance().getResources().getAssets().open("cat.png"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        bPos = ByteBuffer.allocateDirect(sPos.length * 4)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer()
-                .put(sPos);
-        bPos.position(0);
         bCoord = ByteBuffer.allocateDirect(sCoord.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer()
@@ -82,18 +79,55 @@ public class ImageRenderer {
         glPosition = GLES20.glGetAttribLocation(program, "vPosition");
         glCoordinate = GLES20.glGetAttribLocation(program, "vCoordinate");
         glTexture = GLES20.glGetUniformLocation(program, "vTexture");
-        pos_trans_box = GLES20.glGetUniformLocation(program, "trans");
-        pos_proj_box = GLES20.glGetUniformLocation(program, "proj");
+        glTrans = GLES20.glGetUniformLocation(program, "trans");
+        glProject = GLES20.glGetUniformLocation(program, "proj");
     }
 
-    public void render(Matrix44F projectionMatrix, Matrix44F cameraview, Vec2F size) {
-        GLES20.glUniformMatrix4fv(pos_trans_box, 1, false, cameraview.data, 0);
-        GLES20.glUniformMatrix4fv(pos_proj_box, 1, false, projectionMatrix.data, 0);
+    public void render(Matrix44F projectionMatrix, Matrix44F cameraview, Vec2F size, String content) {
+        if (null == rightPos) {
+            Log.d(TAG, "render: 1111");
+            float size0 = size.data[0];
+            float size1 = size.data[1];
+            //顶点坐标
+            float[] rightOriginPos = new float[]{
+                    -size0 / 2 - size0, size1 / 2,    //左上角
+                    -size0 / 2 - size0, -size1 / 2,   //左下角
+                    size0 / 2 - size0, size1 / 2,     //右上角
+                    size0 / 2 - size0, -size1 / 2     //右下角
+            };
+            float[] leftOriginPos = new float[]{
+                    -size0 / 2 + size0, size1 / 2,    //左上角
+                    -size0 / 2 + size0, -size1 / 2,   //左下角
+                    size0 / 2 + size0, size1 / 2,     //右上角
+                    size0 / 2 + size0, -size1 / 2     //右下角
+            };
+            rightPos = ByteBuffer.allocateDirect(rightOriginPos.length * 4)
+                    .order(ByteOrder.nativeOrder())
+                    .asFloatBuffer()
+                    .put(rightOriginPos);
+            rightPos.position(0);
+            leftPos = ByteBuffer.allocateDirect(leftOriginPos.length * 4)
+                    .order(ByteOrder.nativeOrder())
+                    .asFloatBuffer()
+                    .put(leftOriginPos);
+            leftPos.position(0);
+        }
+        if (TextUtils.isEmpty(nowContent) || !nowContent.equals(content)) {
+            bitmap = null;
+            bitmap = drawTextToBitmap(App.getInstance(), content);
+            createTexture();
+        }
+        GLES20.glUniformMatrix4fv(glTrans, 1, false, cameraview.data, 0);
+        GLES20.glUniformMatrix4fv(glProject, 1, false, projectionMatrix.data, 0);
         GLES20.glEnableVertexAttribArray(glPosition);
         GLES20.glEnableVertexAttribArray(glCoordinate);
         GLES20.glUniform1i(glTexture, 0);
-        createTexture();
-        GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, bPos);
+        //绘制识别目标右边图片
+        GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, rightPos);
+        GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        //绘制识别目标坐标图片
+        GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, leftPos);
         GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
     }
@@ -118,6 +152,51 @@ public class ImageRenderer {
             return texture[0];
         }
         return 0;
+    }
+
+    private Bitmap drawTextToBitmap(Context context, String content) {
+        Bitmap bitmap = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_4444);
+        // get a canvas to paint over the bitmap
+        Canvas canvas = new Canvas(bitmap);
+        bitmap.eraseColor(android.graphics.Color.TRANSPARENT);
+
+        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+        TextView tv = new TextView(context);
+        tv.setTextColor(Color.RED);
+        tv.setTextSize(6);
+        tv.setText(content);
+        tv.setEllipsize(TextUtils.TruncateAt.END);
+        //tv.setMaxLines(4);
+        tv.setGravity(Gravity.TOP);
+        tv.setPadding(0, 0, 0, 0);
+        tv.setDrawingCacheEnabled(true);
+        tv.measure(View.MeasureSpec.makeMeasureSpec(canvas.getWidth(),
+                View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(
+                canvas.getHeight(), View.MeasureSpec.EXACTLY));
+        tv.layout(0, 0, tv.getMeasuredWidth(), tv.getMeasuredHeight());
+        LinearLayout parent = null;
+        if (!bitmap.isRecycled()) {
+            parent = new LinearLayout(context);
+            parent.setDrawingCacheEnabled(true);
+            parent.measure(View.MeasureSpec.makeMeasureSpec(canvas.getWidth(),
+                    View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(
+                    canvas.getHeight(), View.MeasureSpec.EXACTLY));
+            parent.layout(0, 0, parent.getMeasuredWidth(),
+                    parent.getMeasuredHeight());
+            parent.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
+            parent.setOrientation(LinearLayout.VERTICAL);
+            parent.setBackgroundColor(context.getResources().getColor(R.color.transparent));
+            parent.addView(tv);
+        }
+        canvas.drawBitmap(parent.getDrawingCache(), 0, 0, new Paint());
+        tv.setDrawingCacheEnabled(false);
+        parent.setDrawingCacheEnabled(false);
+        Matrix matrix = new Matrix();
+        matrix.postScale(1, -1);
+        matrix.postRotate(-180);
+        Bitmap resultBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        return resultBitmap;
     }
 
     private int loadShader(int type, String shaderCode) {
