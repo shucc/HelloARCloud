@@ -97,12 +97,13 @@ public class GLView extends GLSurfaceView {
     }
 
     private static class ContextFactory implements GLSurfaceView.EGLContextFactory {
+
         private static int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
 
         public EGLContext createContext(EGL10 egl, EGLDisplay display, EGLConfig eglConfig) {
             EGLContext context;
-            int[] attrib = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE};
-            context = egl.eglCreateContext(display, eglConfig, EGL10.EGL_NO_CONTEXT, attrib);
+            int[] attribute = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE};
+            context = egl.eglCreateContext(display, eglConfig, EGL10.EGL_NO_CONTEXT, attribute);
             return context;
         }
 

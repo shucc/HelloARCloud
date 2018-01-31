@@ -42,11 +42,11 @@ public class HelloAR {
     private CameraDevice camera;
     private CameraFrameStreamer streamer;
     private ArrayList<ImageTracker> trackers;
-    private Renderer videobg_renderer;
-    private ImageRenderer box_renderer;
-    private CloudRecognizer cloud_recognizer;
-    private boolean viewport_changed = false;
-    private Vec2I view_size = new Vec2I(0, 0);
+    private Renderer bgRenderer;
+    private ImageRenderer targetRenderer;
+    private CloudRecognizer cloudRecognizer;
+    private boolean viewPortChanged = false;
+    private Vec2I viewSize = new Vec2I(0, 0);
     private int rotation = 0;
     private Vec4I viewport = new Vec4I(0, 0, 1280, 720);
 
@@ -58,12 +58,12 @@ public class HelloAR {
         camera = new CameraDevice();
         streamer = new CameraFrameStreamer();
         streamer.attachCamera(camera);
-        cloud_recognizer = new CloudRecognizer();
-        cloud_recognizer.attachStreamer(streamer);
+        cloudRecognizer = new CloudRecognizer();
+        cloudRecognizer.attachStreamer(streamer);
         boolean status = true;
         status &= camera.open(CameraDeviceType.Default);
         camera.setSize(new Vec2I(1280, 720));
-        cloud_recognizer.open(cloud_server_address, cloud_key, cloud_secret, new FunctorOfVoidFromCloudStatus() {
+        cloudRecognizer.open(cloud_server_address, cloud_key, cloud_secret, new FunctorOfVoidFromCloudStatus() {
             @Override
             public void invoke(int status) {
                 if (status == CloudStatus.Success) {
@@ -77,7 +77,8 @@ public class HelloAR {
                 }
             }
         }, new FunctorOfVoidFromCloudStatusAndListOfPointerOfTarget() {
-            private HashSet<String> uids = new HashSet<String>();
+
+            private HashSet<String> uids = new HashSet<>();
 
             @Override
             public void invoke(int status, ArrayList<Target> targets) {
@@ -120,14 +121,14 @@ public class HelloAR {
             tracker.dispose();
         }
         trackers.clear();
-        if (cloud_recognizer != null) {
-            cloud_recognizer.dispose();
-            cloud_recognizer = null;
+        if (cloudRecognizer != null) {
+            cloudRecognizer.dispose();
+            cloudRecognizer = null;
         }
-        box_renderer = null;
-        if (videobg_renderer != null) {
-            videobg_renderer.dispose();
-            videobg_renderer = null;
+        targetRenderer = null;
+        if (bgRenderer != null) {
+            bgRenderer.dispose();
+            bgRenderer = null;
         }
         if (streamer != null) {
             streamer.dispose();
@@ -143,7 +144,7 @@ public class HelloAR {
         boolean status = true;
         status &= (camera != null) && camera.start();
         status &= (streamer != null) && streamer.start();
-        status &= (cloud_recognizer != null) && cloud_recognizer.start();
+        status &= (cloudRecognizer != null) && cloudRecognizer.start();
         camera.setFocusMode(CameraDeviceFocusMode.Continousauto);
         for (ImageTracker tracker : trackers) {
             status &= tracker.start();
@@ -156,34 +157,34 @@ public class HelloAR {
         for (ImageTracker tracker : trackers) {
             status &= tracker.stop();
         }
-        status &= (cloud_recognizer != null) && cloud_recognizer.stop();
+        status &= (cloudRecognizer != null) && cloudRecognizer.stop();
         status &= (streamer != null) && streamer.stop();
         status &= (camera != null) && camera.stop();
         return status;
     }
 
     public void initGL() {
-        if (videobg_renderer != null) {
-            videobg_renderer.dispose();
+        if (bgRenderer != null) {
+            bgRenderer.dispose();
         }
-        videobg_renderer = new Renderer();
-        box_renderer = new ImageRenderer();
-        box_renderer.init();
+        bgRenderer = new Renderer();
+        targetRenderer = new ImageRenderer();
+        targetRenderer.init();
     }
 
     public void resizeGL(int width, int height) {
-        view_size = new Vec2I(width, height);
-        viewport_changed = true;
+        viewSize = new Vec2I(width, height);
+        viewPortChanged = true;
     }
 
     private void updateViewport() {
-        CameraCalibration calib = camera != null ? camera.cameraCalibration() : null;
-        int rotation = calib != null ? calib.rotation() : 0;
+        CameraCalibration cameraCalibration = camera != null ? camera.cameraCalibration() : null;
+        int rotation = cameraCalibration != null ? cameraCalibration.rotation() : 0;
         if (rotation != this.rotation) {
             this.rotation = rotation;
-            viewport_changed = true;
+            viewPortChanged = true;
         }
-        if (viewport_changed) {
+        if (viewPortChanged) {
             Vec2I size = new Vec2I(1, 1);
             if ((camera != null) && camera.isOpened()) {
                 size = camera.size();
@@ -191,22 +192,22 @@ public class HelloAR {
             if (rotation == 90 || rotation == 270) {
                 size = new Vec2I(size.data[1], size.data[0]);
             }
-            float scaleRatio = Math.max((float) view_size.data[0] / (float) size.data[0], (float) view_size.data[1] / (float) size.data[1]);
+            float scaleRatio = Math.max((float) viewSize.data[0] / (float) size.data[0], (float) viewSize.data[1] / (float) size.data[1]);
             Vec2I viewport_size = new Vec2I(Math.round(size.data[0] * scaleRatio), Math.round(size.data[1] * scaleRatio));
-            viewport = new Vec4I((view_size.data[0] - viewport_size.data[0]) / 2, (view_size.data[1] - viewport_size.data[1]) / 2, viewport_size.data[0], viewport_size.data[1]);
+            viewport = new Vec4I((viewSize.data[0] - viewport_size.data[0]) / 2, (viewSize.data[1] - viewport_size.data[1]) / 2, viewport_size.data[0], viewport_size.data[1]);
 
             if ((camera != null) && camera.isOpened())
-                viewport_changed = false;
+                viewPortChanged = false;
         }
     }
 
     public void render() {
         GLES20.glClearColor(1.f, 1.f, 1.f, 1.f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-        if (videobg_renderer != null) {
-            Vec4I default_viewport = new Vec4I(0, 0, view_size.data[0], view_size.data[1]);
+        if (bgRenderer != null) {
+            Vec4I default_viewport = new Vec4I(0, 0, viewSize.data[0], viewSize.data[1]);
             GLES20.glViewport(default_viewport.data[0], default_viewport.data[1], default_viewport.data[2], default_viewport.data[3]);
-            if (videobg_renderer.renderErrorMessage(default_viewport)) {
+            if (bgRenderer.renderErrorMessage(default_viewport)) {
                 return;
             }
         }
@@ -217,8 +218,8 @@ public class HelloAR {
         try {
             updateViewport();
             GLES20.glViewport(viewport.data[0], viewport.data[1], viewport.data[2], viewport.data[3]);
-            if (videobg_renderer != null) {
-                videobg_renderer.render(frame, viewport);
+            if (bgRenderer != null) {
+                bgRenderer.render(frame, viewport);
             }
             for (TargetInstance targetInstance : frame.targetInstances()) {
                 int status = targetInstance.status();
@@ -231,8 +232,8 @@ public class HelloAR {
                     if (imagetarget == null) {
                         continue;
                     }
-                    if (box_renderer != null) {
-                        box_renderer.render(camera.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size(), metaStr);
+                    if (targetRenderer != null) {
+                        targetRenderer.render(camera.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size(), metaStr);
                     }
                 }
             }

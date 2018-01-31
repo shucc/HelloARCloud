@@ -2,6 +2,7 @@ package cn.easyar.samples.helloarcloud;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -16,6 +17,7 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -84,8 +86,11 @@ public class ImageRenderer {
     }
 
     public void render(Matrix44F projectionMatrix, Matrix44F cameraview, Vec2F size, String content) {
-        if (null == rightPos) {
-            Log.d(TAG, "render: 1111");
+        //设置防止绘制的图片的背景为透明
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+        GLES20.glEnable(GLES20.GL_ALPHA_BITS);
+        if (TextUtils.isEmpty(nowContent) || !nowContent.equals(content)) {
             float size0 = size.data[0];
             float size1 = size.data[1];
             //顶点坐标
@@ -111,8 +116,8 @@ public class ImageRenderer {
                     .asFloatBuffer()
                     .put(leftOriginPos);
             leftPos.position(0);
-        }
-        if (TextUtils.isEmpty(nowContent) || !nowContent.equals(content)) {
+
+            nowContent = content;
             bitmap = null;
             bitmap = drawTextToBitmap(App.getInstance(), content);
             createTexture();
@@ -130,6 +135,7 @@ public class ImageRenderer {
         GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, leftPos);
         GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        GLES20.glDisable(GLES20.GL_ALPHA_BITS);
     }
 
     private int createTexture() {
@@ -159,7 +165,6 @@ public class ImageRenderer {
         // get a canvas to paint over the bitmap
         Canvas canvas = new Canvas(bitmap);
         bitmap.eraseColor(android.graphics.Color.TRANSPARENT);
-
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         TextView tv = new TextView(context);
         tv.setTextColor(Color.RED);
