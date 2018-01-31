@@ -18,6 +18,7 @@ import cn.easyar.Matrix44F;
 import cn.easyar.Vec2F;
 
 public class BoxRenderer {
+
     private int program_box;
     private int pos_coord_box;
     private int pos_color_box;

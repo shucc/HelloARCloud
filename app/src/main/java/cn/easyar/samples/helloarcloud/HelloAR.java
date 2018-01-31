@@ -54,7 +54,7 @@ public class HelloAR {
         trackers = new ArrayList<>();
     }
 
-    public boolean initialize(String cloud_server_address, String cloud_key, String cloud_secret) {
+    public boolean initialize(String cloudServerAddress, String cloudKey, String cloudSecret) {
         camera = new CameraDevice();
         streamer = new CameraFrameStreamer();
         streamer.attachCamera(camera);
@@ -63,7 +63,7 @@ public class HelloAR {
         boolean status = true;
         status &= camera.open(CameraDeviceType.Default);
         camera.setSize(new Vec2I(1280, 720));
-        cloudRecognizer.open(cloud_server_address, cloud_key, cloud_secret, new FunctorOfVoidFromCloudStatus() {
+        cloudRecognizer.open(cloudServerAddress, cloudKey, cloudSecret, new FunctorOfVoidFromCloudStatus() {
             @Override
             public void invoke(int status) {
                 if (status == CloudStatus.Success) {
@@ -225,7 +225,6 @@ public class HelloAR {
                 int status = targetInstance.status();
                 if (status == TargetStatus.Tracked) {
                     Target target = targetInstance.target();
-                    Log.d(TAG, "render: " + target.meta());
                     String metaStr = new String(Base64.decode(target.meta().getBytes(), Base64.DEFAULT));
                     Log.d(TAG, "render: " + metaStr);
                     ImageTarget imagetarget = target instanceof ImageTarget ? (ImageTarget) (target) : null;
@@ -233,7 +232,7 @@ public class HelloAR {
                         continue;
                     }
                     if (targetRenderer != null) {
-                        targetRenderer.render(camera.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size(), metaStr);
+                        targetRenderer.render(camera.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size(), metaStr, target.uid());
                     }
                 }
             }

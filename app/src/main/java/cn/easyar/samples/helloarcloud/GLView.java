@@ -23,20 +23,21 @@ import cn.easyar.Engine;
 public class GLView extends GLSurfaceView {
 
     private HelloAR helloAR;
-    private String cloud_server_address;
-    private String cloud_key;
-    private String cloud_secret;
+    private String cloudServerAddress;
+    private String cloudKey;
+    private String cloudSecret;
 
-    public GLView(Context context, String cloud_server_address, String cloud_key, String cloud_secret) {
+    public GLView(Context context, String cloudServerAddress, String cloudKey, String cloudSecret) {
         super(context);
-        this.cloud_server_address = cloud_server_address;
-        this.cloud_key = cloud_key;
-        this.cloud_secret = cloud_secret;
+        this.cloudServerAddress = cloudServerAddress;
+        this.cloudKey = cloudKey;
+        this.cloudSecret = cloudSecret;
 
         setEGLContextFactory(new ContextFactory());
-        setEGLConfigChooser(8, 8, 8, 8, 16, 0);
-        getHolder().setFormat(PixelFormat.TRANSLUCENT);
-        setZOrderOnTop(true);
+        setEGLConfigChooser(new ConfigChooser());
+        //setEGLConfigChooser(8, 8, 8, 8, 16, 0);
+        //getHolder().setFormat(PixelFormat.TRANSLUCENT);
+        //setZOrderOnTop(true);
 
         helloAR = new HelloAR();
 
@@ -69,7 +70,7 @@ public class GLView extends GLSurfaceView {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         synchronized (helloAR) {
-            if (helloAR.initialize(cloud_server_address, cloud_key, cloud_secret)) {
+            if (helloAR.initialize(cloudServerAddress, cloudKey, cloudSecret)) {
                 helloAR.start();
             }
         }

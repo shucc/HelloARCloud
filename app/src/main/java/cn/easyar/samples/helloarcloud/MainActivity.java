@@ -26,19 +26,12 @@ import java.util.HashMap;
 import cn.easyar.Engine;
 
 public class MainActivity extends AppCompatActivity {
-    /*
-    * Steps to create the key for this sample:
-    *  1. login www.easyar.com
-    *  2. create app with
-    *      Name: HelloARCloud
-    *      Package Name: cn.easyar.samples.helloarcloud
-    *  3. find the created item in the list and show key
-    *  4. set key string bellow
-    */
-    private static String key = "Etya2911FlNtVwhDnHkgNiKDwjDVrqRIIL6sbw3UqUr8JAPdqzdPiqnIhx9JnaV67hNsxlBevlTITsAo47D8G10ycnfU3MauNqBXyJXJaxlTXhlr4BNsuO3JdTjhhg35AWlPRwxbABPAJXX9A6l7CEnao78I3Xd7CDTDOGX7tV65KH49g0qZdQ1R7TND9n3gQARiU30F";
-    private static String cloud_server_address = "0f14ca21dd9a6f8ff9e150a0a823049b.cn1.crs.easyar.com:8080";
-    private static String cloud_key = "1dd1bef1b0530cce010ab4789b1b41a5";
-    private static String cloud_secret = "34o8luN03SfF3AHJUjWmrUTEJNQEmWB0TKpZ7g7fROUSm0XSpHrrsX6rcyQ09arTBccqnrx5MKmyv1amnCePypUB50FQbHrP7d5kDth49tKfbsQZDuvchNKDl3WNXf0z";
+
+    private final String KEY = "Etya2911FlNtVwhDnHkgNiKDwjDVrqRIIL6sbw3UqUr8JAPdqzdPiqnIhx9JnaV67hNsxlBevlTITsAo47D8G10ycnfU3MauNqBXyJXJaxlTXhlr4BNsuO3JdTjhhg35AWlPRwxbABPAJXX9A6l7CEnao78I3Xd7CDTDOGX7tV65KH49g0qZdQ1R7TND9n3gQARiU30F";
+    private final String CLOUD_SERVER_ADDRESS = "0f14ca21dd9a6f8ff9e150a0a823049b.cn1.crs.easyar.com:8080";
+    private final String CLOUD_KEY = "1dd1bef1b0530cce010ab4789b1b41a5";
+    private final String CLOUD_SECRET = "34o8luN03SfF3AHJUjWmrUTEJNQEmWB0TKpZ7g7fROUSm0XSpHrrsX6rcyQ09arTBccqnrx5MKmyv1amnCePypUB50FQbHrP7d5kDth49tKfbsQZDuvchNKDl3WNXf0z";
+
     private GLView glView;
 
     @Override
@@ -46,11 +39,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        if (!Engine.initialize(this, key)) {
+        if (!Engine.initialize(this, KEY)) {
             Log.e("HelloAR", "Initialization Failed.");
         }
 
-        glView = new GLView(this, cloud_server_address, cloud_key, cloud_secret);
+        glView = new GLView(this, CLOUD_SERVER_ADDRESS, CLOUD_KEY, CLOUD_SECRET);
 
         requestCameraPermission(new PermissionCallback() {
             @Override
@@ -133,11 +126,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-
         if (id == R.id.action_settings) {
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 }

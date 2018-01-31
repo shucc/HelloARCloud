@@ -2,7 +2,6 @@ package cn.easyar.samples.helloarcloud;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -17,7 +16,6 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -53,7 +51,7 @@ public class ImageRenderer {
     private int glTrans;
     private int glProject;
 
-    private String nowContent;
+    private String targetUid;
 
     public ImageRenderer() {
         bCoord = ByteBuffer.allocateDirect(sCoord.length * 4)
@@ -85,12 +83,14 @@ public class ImageRenderer {
         glProject = GLES20.glGetUniformLocation(program, "proj");
     }
 
-    public void render(Matrix44F projectionMatrix, Matrix44F cameraview, Vec2F size, String content) {
+    public void render(Matrix44F projectionMatrix, Matrix44F cameraview, Vec2F size, String content, String uid) {
         //设置防止绘制的图片的背景为透明
+        //开启混合
         GLES20.glEnable(GLES20.GL_BLEND);
+        //设置混合因子
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
-        GLES20.glEnable(GLES20.GL_ALPHA_BITS);
-        if (TextUtils.isEmpty(nowContent) || !nowContent.equals(content)) {
+        if (TextUtils.isEmpty(targetUid) || !targetUid.equals(uid)) {
+            targetUid = uid;
             float size0 = size.data[0];
             float size1 = size.data[1];
             //顶点坐标
@@ -117,7 +117,6 @@ public class ImageRenderer {
                     .put(leftOriginPos);
             leftPos.position(0);
 
-            nowContent = content;
             bitmap = null;
             bitmap = drawTextToBitmap(App.getInstance(), content);
             createTexture();
@@ -135,7 +134,7 @@ public class ImageRenderer {
         GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, leftPos);
         GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-        GLES20.glDisable(GLES20.GL_ALPHA_BITS);
+        GLES20.glDisable(GLES20.GL_BLEND);
     }
 
     private int createTexture() {
@@ -161,6 +160,7 @@ public class ImageRenderer {
     }
 
     private Bitmap drawTextToBitmap(Context context, String content) {
+        Log.d(TAG, "drawTextToBitmap11: " + content);
         Bitmap bitmap = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_4444);
         // get a canvas to paint over the bitmap
         Canvas canvas = new Canvas(bitmap);
