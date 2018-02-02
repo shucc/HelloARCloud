@@ -1,5 +1,6 @@
-package cn.easyar.samples.helloarcloud;
+package cn.easyar.samples.helloarcloud.renderer;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -22,6 +23,10 @@ import java.nio.FloatBuffer;
 
 import cn.easyar.Matrix44F;
 import cn.easyar.Vec2F;
+import cn.easyar.samples.helloarcloud.App;
+import cn.easyar.samples.helloarcloud.R;
+import cn.easyar.samples.helloarcloud.utils.ScreenUtils;
+import cn.easyar.samples.helloarcloud.utils.ShaderUtils;
 
 /**
  * Created by shucc on 18/1/29.
@@ -53,7 +58,10 @@ public class ImageRenderer {
 
     private String targetUid;
 
-    public ImageRenderer() {
+    private Activity activity;
+
+    public ImageRenderer(Activity activity) {
+        this.activity = activity;
         bCoord = ByteBuffer.allocateDirect(sCoord.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer()
@@ -63,8 +71,8 @@ public class ImageRenderer {
 
     public void init() {
         GLES20.glEnable(GLES20.GL_TEXTURE_2D);
-        int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, Utils.loadShader(App.getInstance(), R.raw.image_vertex));
-        int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, Utils.loadShader(App.getInstance(), R.raw.image_frag));
+        int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, ShaderUtils.loadShader(App.getInstance(), R.raw.image_vertex));
+        int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, ShaderUtils.loadShader(App.getInstance(), R.raw.image_frag));
         //创建一个空的OpenGL ES程序
         int program = GLES20.glCreateProgram();
         //顶点着色器加入到程序
@@ -83,7 +91,7 @@ public class ImageRenderer {
         glProject = GLES20.glGetUniformLocation(program, "proj");
     }
 
-    public void render(Matrix44F projectionMatrix, Matrix44F cameraview, Vec2F size, String content, String uid) {
+    public void render(Matrix44F projectionMatrix, Matrix44F cameraView, Vec2F size, String content, String uid) {
         //设置防止绘制的图片的背景为透明
         //开启混合
         GLES20.glEnable(GLES20.GL_BLEND);
@@ -93,7 +101,10 @@ public class ImageRenderer {
             targetUid = uid;
             float size0 = size.data[0];
             float size1 = size.data[1];
-            //顶点坐标
+            int height = ScreenUtils.height(activity).px;
+            int width = ScreenUtils.width(activity).px;
+            Log.d(TAG, "render: " + size0 + "-->" + size1 + "-->" + height + "-->" + width);
+            //右侧顶点坐标
             float[] rightOriginPos = new float[]{
                     -size0 / 2 - size0, size1 / 2,    //左上角
                     -size0 / 2 - size0, -size1 / 2,   //左下角
@@ -116,12 +127,11 @@ public class ImageRenderer {
                     .asFloatBuffer()
                     .put(leftOriginPos);
             leftPos.position(0);
-
             bitmap = null;
             bitmap = drawTextToBitmap(App.getInstance(), content);
             createTexture();
         }
-        GLES20.glUniformMatrix4fv(glTrans, 1, false, cameraview.data, 0);
+        GLES20.glUniformMatrix4fv(glTrans, 1, false, cameraView.data, 0);
         GLES20.glUniformMatrix4fv(glProject, 1, false, projectionMatrix.data, 0);
         GLES20.glEnableVertexAttribArray(glPosition);
         GLES20.glEnableVertexAttribArray(glCoordinate);
@@ -130,7 +140,7 @@ public class ImageRenderer {
         GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, rightPos);
         GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-        //绘制识别目标坐标图片
+        //绘制识别目标左边图片
         GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, leftPos);
         GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
@@ -160,14 +170,13 @@ public class ImageRenderer {
     }
 
     private Bitmap drawTextToBitmap(Context context, String content) {
-        Log.d(TAG, "drawTextToBitmap11: " + content);
         Bitmap bitmap = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_4444);
         // get a canvas to paint over the bitmap
         Canvas canvas = new Canvas(bitmap);
-        bitmap.eraseColor(android.graphics.Color.TRANSPARENT);
+        bitmap.eraseColor(Color.TRANSPARENT);
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         TextView tv = new TextView(context);
-        tv.setTextColor(Color.RED);
+        tv.setTextColor(Color.BLUE);
         tv.setTextSize(6);
         tv.setText(content);
         tv.setEllipsize(TextUtils.TruncateAt.END);
@@ -175,9 +184,8 @@ public class ImageRenderer {
         tv.setGravity(Gravity.TOP);
         tv.setPadding(0, 0, 0, 0);
         tv.setDrawingCacheEnabled(true);
-        tv.measure(View.MeasureSpec.makeMeasureSpec(canvas.getWidth(),
-                View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(
-                canvas.getHeight(), View.MeasureSpec.EXACTLY));
+        tv.measure(View.MeasureSpec.makeMeasureSpec(canvas.getWidth(), View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(canvas.getHeight(), View.MeasureSpec.EXACTLY));
         tv.layout(0, 0, tv.getMeasuredWidth(), tv.getMeasuredHeight());
         LinearLayout parent = null;
         if (!bitmap.isRecycled()) {
@@ -199,7 +207,7 @@ public class ImageRenderer {
         parent.setDrawingCacheEnabled(false);
         Matrix matrix = new Matrix();
         matrix.postScale(1, -1);
-        matrix.postRotate(-180);
+        matrix.postRotate(180);
         Bitmap resultBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
         return resultBitmap;
     }

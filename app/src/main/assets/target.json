@@ -1,0 +1,11 @@
+{
+  "images":
+  [
+    {
+      "image":"cat.png",
+      "name":"猫",
+      "uid":"cat",
+      "meta":"这是一只猫"
+    }
+  ]
+}

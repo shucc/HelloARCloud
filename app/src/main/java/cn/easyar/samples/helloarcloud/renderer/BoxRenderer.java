@@ -6,7 +6,7 @@
 //
 //================================================================================================================================
 
-package cn.easyar.samples.helloarcloud;
+package cn.easyar.samples.helloarcloud.renderer;
 
 import android.opengl.GLES20;
 

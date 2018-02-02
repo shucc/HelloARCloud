@@ -1,13 +1,6 @@
-//================================================================================================================================
-//
-//  Copyright (c) 2015-2017 VisionStar Information Technology (Shanghai) Co., Ltd. All Rights Reserved.
-//  EasyAR is the registered trademark or trademark of VisionStar Information Technology (Shanghai) Co., Ltd in China
-//  and other countries for the augmented reality technology developed by VisionStar Information Technology (Shanghai) Co., Ltd.
-//
-//================================================================================================================================
-
 package cn.easyar.samples.helloarcloud;
 
+import android.app.Activity;
 import android.opengl.GLES20;
 import android.util.Base64;
 import android.util.Log;
@@ -29,91 +22,76 @@ import cn.easyar.FunctorOfVoidFromPointerOfTargetAndBool;
 import cn.easyar.ImageTarget;
 import cn.easyar.ImageTracker;
 import cn.easyar.Renderer;
+import cn.easyar.StorageType;
 import cn.easyar.Target;
 import cn.easyar.TargetInstance;
 import cn.easyar.TargetStatus;
 import cn.easyar.Vec2I;
 import cn.easyar.Vec4I;
+import cn.easyar.samples.helloarcloud.renderer.ImageRenderer;
 
-public class HelloAR {
+/**
+ * Created by shucc on 18/2/2.
+ * cc@cchao.org
+ */
+public class ArLocal {
 
     private final String TAG = getClass().getName();
 
-    private CameraDevice camera;
-    private CameraFrameStreamer streamer;
+    private CameraDevice cameraDevice;
+
+    private CameraFrameStreamer cameraFrameStreamer;
+
     private ArrayList<ImageTracker> trackers;
+
     private Renderer bgRenderer;
+
     private ImageRenderer targetRenderer;
-    private CloudRecognizer cloudRecognizer;
+
     private boolean viewPortChanged = false;
+
     private Vec2I viewSize = new Vec2I(0, 0);
+
     private int rotation = 0;
+
     private Vec4I viewport = new Vec4I(0, 0, 1280, 720);
 
-    public HelloAR() {
+    private Activity activity;
+
+    public ArLocal(Activity activity) {
+        this.activity = activity;
         trackers = new ArrayList<>();
     }
 
     public boolean initialize(String cloudServerAddress, String cloudKey, String cloudSecret) {
-        camera = new CameraDevice();
-        streamer = new CameraFrameStreamer();
-        streamer.attachCamera(camera);
-        cloudRecognizer = new CloudRecognizer();
-        cloudRecognizer.attachStreamer(streamer);
+        cameraDevice = new CameraDevice();
+        cameraFrameStreamer = new CameraFrameStreamer();
+        cameraFrameStreamer.attachCamera(cameraDevice);
         boolean status = true;
-        status &= camera.open(CameraDeviceType.Default);
-        camera.setSize(new Vec2I(1280, 720));
-        cloudRecognizer.open(cloudServerAddress, cloudKey, cloudSecret, new FunctorOfVoidFromCloudStatus() {
-            @Override
-            public void invoke(int status) {
-                if (status == CloudStatus.Success) {
-                    Log.i("HelloAR", "CloudRecognizerInitCallBack: Success");
-                } else if (status == CloudStatus.Reconnecting) {
-                    Log.i("HelloAR", "CloudRecognizerInitCallBack: Reconnecting");
-                } else if (status == CloudStatus.Fail) {
-                    Log.i("HelloAR", "CloudRecognizerInitCallBack: Fail");
-                } else {
-                    Log.i("HelloAR", "CloudRecognizerInitCallBack: " + Integer.toString(status));
-                }
-            }
-        }, new FunctorOfVoidFromCloudStatusAndListOfPointerOfTarget() {
-
-            private HashSet<String> uids = new HashSet<>();
-
-            @Override
-            public void invoke(int status, ArrayList<Target> targets) {
-                if (status == CloudStatus.Success) {
-                    Log.i("HelloAR", "CloudRecognizerCallBack: Success");
-                } else if (status == CloudStatus.Reconnecting) {
-                    Log.i("HelloAR", "CloudRecognizerCallBack: Reconnecting");
-                } else if (status == CloudStatus.Fail) {
-                    Log.i("HelloAR", "CloudRecognizerCallBack: Fail");
-                } else {
-                    Log.i("HelloAR", "CloudRecognizerCallBack: " + Integer.toString(status));
-                }
-                synchronized (uids) {
-                    for (Target t : targets) {
-                        if (!uids.contains(t.uid())) {
-                            Log.i("HelloAR", "add cloud target: " + t.uid());
-                            uids.add(t.uid());
-                            trackers.get(0).loadTarget(t, new FunctorOfVoidFromPointerOfTargetAndBool() {
-                                @Override
-                                public void invoke(Target target, boolean status) {
-                                    Log.i("HelloAR", String.format("load target (%b): %s (%d)", status, target.name(), target.runtimeID()));
-                                }
-                            });
-                        }
-                    }
-                }
-            }
-        });
+        status &= cameraDevice.open(CameraDeviceType.Default);
+        cameraDevice.setSize(new Vec2I(1280, 720));
         if (!status) {
             return status;
         }
         ImageTracker tracker = new ImageTracker();
-        tracker.attachStreamer(streamer);
+        tracker.attachStreamer(cameraFrameStreamer);
+        loadAllFromJsonFile(tracker, "target.json");
         trackers.add(tracker);
         return status;
+    }
+
+    private void loadAllFromJsonFile(ImageTracker tracker, String path) {
+        for (ImageTarget target : ImageTarget.setupAll(path, StorageType.Assets)) {
+            tracker.loadTarget(target, new FunctorOfVoidFromPointerOfTargetAndBool() {
+                @Override
+                public void invoke(Target target, boolean status) {
+                    try {
+                        Log.i("HelloAR", String.format("load target (%b): %s (%d)", status, target.name(), target.runtimeID()));
+                    } catch (Throwable ex) {
+                    }
+                }
+            });
+        }
     }
 
     public void dispose() {
@@ -121,31 +99,26 @@ public class HelloAR {
             tracker.dispose();
         }
         trackers.clear();
-        if (cloudRecognizer != null) {
-            cloudRecognizer.dispose();
-            cloudRecognizer = null;
-        }
         targetRenderer = null;
         if (bgRenderer != null) {
             bgRenderer.dispose();
             bgRenderer = null;
         }
-        if (streamer != null) {
-            streamer.dispose();
-            streamer = null;
+        if (cameraFrameStreamer != null) {
+            cameraFrameStreamer.dispose();
+            cameraFrameStreamer = null;
         }
-        if (camera != null) {
-            camera.dispose();
-            camera = null;
+        if (cameraDevice != null) {
+            cameraDevice.dispose();
+            cameraDevice = null;
         }
     }
 
     public boolean start() {
         boolean status = true;
-        status &= (camera != null) && camera.start();
-        status &= (streamer != null) && streamer.start();
-        status &= (cloudRecognizer != null) && cloudRecognizer.start();
-        camera.setFocusMode(CameraDeviceFocusMode.Continousauto);
+        status &= (cameraDevice != null) && cameraDevice.start();
+        status &= (cameraFrameStreamer != null) && cameraFrameStreamer.start();
+        cameraDevice.setFocusMode(CameraDeviceFocusMode.Continousauto);
         for (ImageTracker tracker : trackers) {
             status &= tracker.start();
         }
@@ -157,9 +130,8 @@ public class HelloAR {
         for (ImageTracker tracker : trackers) {
             status &= tracker.stop();
         }
-        status &= (cloudRecognizer != null) && cloudRecognizer.stop();
-        status &= (streamer != null) && streamer.stop();
-        status &= (camera != null) && camera.stop();
+        status &= (cameraFrameStreamer != null) && cameraFrameStreamer.stop();
+        status &= (cameraDevice != null) && cameraDevice.stop();
         return status;
     }
 
@@ -168,7 +140,7 @@ public class HelloAR {
             bgRenderer.dispose();
         }
         bgRenderer = new Renderer();
-        targetRenderer = new ImageRenderer();
+        targetRenderer = new ImageRenderer(activity);
         targetRenderer.init();
     }
 
@@ -178,7 +150,7 @@ public class HelloAR {
     }
 
     private void updateViewport() {
-        CameraCalibration cameraCalibration = camera != null ? camera.cameraCalibration() : null;
+        CameraCalibration cameraCalibration = cameraDevice != null ? cameraDevice.cameraCalibration() : null;
         int rotation = cameraCalibration != null ? cameraCalibration.rotation() : 0;
         if (rotation != this.rotation) {
             this.rotation = rotation;
@@ -186,8 +158,8 @@ public class HelloAR {
         }
         if (viewPortChanged) {
             Vec2I size = new Vec2I(1, 1);
-            if ((camera != null) && camera.isOpened()) {
-                size = camera.size();
+            if ((cameraDevice != null) && cameraDevice.isOpened()) {
+                size = cameraDevice.size();
             }
             if (rotation == 90 || rotation == 270) {
                 size = new Vec2I(size.data[1], size.data[0]);
@@ -195,9 +167,9 @@ public class HelloAR {
             float scaleRatio = Math.max((float) viewSize.data[0] / (float) size.data[0], (float) viewSize.data[1] / (float) size.data[1]);
             Vec2I viewport_size = new Vec2I(Math.round(size.data[0] * scaleRatio), Math.round(size.data[1] * scaleRatio));
             viewport = new Vec4I((viewSize.data[0] - viewport_size.data[0]) / 2, (viewSize.data[1] - viewport_size.data[1]) / 2, viewport_size.data[0], viewport_size.data[1]);
-
-            if ((camera != null) && camera.isOpened())
+            if ((cameraDevice != null) && cameraDevice.isOpened()) {
                 viewPortChanged = false;
+            }
         }
     }
 
@@ -211,10 +183,10 @@ public class HelloAR {
                 return;
             }
         }
-        if (streamer == null) {
+        if (cameraFrameStreamer == null) {
             return;
         }
-        Frame frame = streamer.peek();
+        Frame frame = cameraFrameStreamer.peek();
         try {
             updateViewport();
             GLES20.glViewport(viewport.data[0], viewport.data[1], viewport.data[2], viewport.data[3]);
@@ -226,14 +198,14 @@ public class HelloAR {
                 if (status == TargetStatus.Tracked) {
                     Target target = targetInstance.target();
                     String metaStr = new String(Base64.decode(target.meta().getBytes(), Base64.DEFAULT));
-                    Log.d(TAG, "render: " + metaStr);
+                    Log.d(TAG, "render: " + target.name());
                     ImageTarget imagetarget = target instanceof ImageTarget ? (ImageTarget) (target) : null;
                     if (imagetarget == null) {
                         continue;
                     }
-                    if (targetRenderer != null) {
-                        targetRenderer.render(camera.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size(), metaStr, target.uid());
-                    }
+//                    if (targetRenderer != null) {
+//                        targetRenderer.render(cameraDevice.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size(), metaStr, target.uid());
+//                    }
                 }
             }
         } finally {

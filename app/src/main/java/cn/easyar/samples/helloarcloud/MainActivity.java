@@ -24,6 +24,7 @@ import android.view.WindowManager;
 import java.util.HashMap;
 
 import cn.easyar.Engine;
+import cn.easyar.samples.helloarcloud.widget.GLView;
 
 public class MainActivity extends AppCompatActivity {
 
