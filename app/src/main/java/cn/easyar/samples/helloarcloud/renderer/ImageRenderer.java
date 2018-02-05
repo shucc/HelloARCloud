@@ -3,6 +3,7 @@ package cn.easyar.samples.helloarcloud.renderer;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -11,12 +12,12 @@ import android.graphics.PorterDuff;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -25,7 +26,6 @@ import cn.easyar.Matrix44F;
 import cn.easyar.Vec2F;
 import cn.easyar.samples.helloarcloud.App;
 import cn.easyar.samples.helloarcloud.R;
-import cn.easyar.samples.helloarcloud.utils.ScreenUtils;
 import cn.easyar.samples.helloarcloud.utils.ShaderUtils;
 
 /**
@@ -46,9 +46,11 @@ public class ImageRenderer {
 
     private FloatBuffer rightPos;
     private FloatBuffer leftPos;
+    private FloatBuffer middlePos;
     private FloatBuffer bCoord;
 
-    private Bitmap bitmap;
+    private Bitmap wordBitmap;
+    private Bitmap middleBitmap;
 
     private int glPosition;
     private int glCoordinate;
@@ -60,8 +62,19 @@ public class ImageRenderer {
 
     private Activity activity;
 
+    private int[] texture = new int[2];
+
     public ImageRenderer(Activity activity) {
         this.activity = activity;
+        try {
+            Bitmap bitmap = BitmapFactory.decodeStream(activity.getResources().getAssets().open("bg_award.png"));
+            Matrix matrix = new Matrix();
+            matrix.postScale(1, -1);
+            matrix.postRotate(180);
+            middleBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         bCoord = ByteBuffer.allocateDirect(sCoord.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer()
@@ -101,21 +114,25 @@ public class ImageRenderer {
             targetUid = uid;
             float size0 = size.data[0];
             float size1 = size.data[1];
-            int height = ScreenUtils.height(activity).px;
-            int width = ScreenUtils.width(activity).px;
-            Log.d(TAG, "render: " + size0 + "-->" + size1 + "-->" + height + "-->" + width);
             //右侧顶点坐标
             float[] rightOriginPos = new float[]{
-                    -size0 / 2 - size0, size1 / 2,    //左上角
-                    -size0 / 2 - size0, -size1 / 2,   //左下角
-                    size0 / 2 - size0, size1 / 2,     //右上角
-                    size0 / 2 - size0, -size1 / 2     //右下角
+                    -size0 / 2 - size0, size1 / 2,  //左上角
+                    -size0 / 2 - size0, -size1 / 2, //左下角
+                    size0 / 2 - size0, size1 / 2,   //右上角
+                    size0 / 2 - size0, -size1 / 2   //右下角
             };
             float[] leftOriginPos = new float[]{
-                    -size0 / 2 + size0, size1 / 2,    //左上角
-                    -size0 / 2 + size0, -size1 / 2,   //左下角
-                    size0 / 2 + size0, size1 / 2,     //右上角
-                    size0 / 2 + size0, -size1 / 2     //右下角
+                    -size0 / 2 + size0, size1 / 2,  //左上角
+                    -size0 / 2 + size0, -size1 / 2, //左下角
+                    size0 / 2 + size0, size1 / 2,   //右上角
+                    size0 / 2 + size0, -size1 / 2   //右下角
+            };
+            float middleProportion = (float) middleBitmap.getHeight() / middleBitmap.getWidth();
+            float[] middleOriginPos = new float[] {
+                    -size0 / 2, size0 * middleProportion / 2,  //左上角
+                    -size0 / 2, -size0 * middleProportion  / 2, //左下角
+                    size0 / 2, size0 * middleProportion  / 2,   //右上角
+                    size0 / 2, -size0 * middleProportion  / 2   //右下角
             };
             rightPos = ByteBuffer.allocateDirect(rightOriginPos.length * 4)
                     .order(ByteOrder.nativeOrder())
@@ -127,10 +144,16 @@ public class ImageRenderer {
                     .asFloatBuffer()
                     .put(leftOriginPos);
             leftPos.position(0);
-            bitmap = null;
-            bitmap = drawTextToBitmap(App.getInstance(), content);
-            createTexture();
+            middlePos = ByteBuffer.allocateDirect(middleOriginPos.length * 4)
+                    .order(ByteOrder.nativeOrder())
+                    .asFloatBuffer()
+                    .put(middleOriginPos);
+            middlePos.position(0);
+            wordBitmap = null;
+            wordBitmap = drawTextToBitmap(App.getInstance(), content);
         }
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        createTexture(wordBitmap, 0);
         GLES20.glUniformMatrix4fv(glTrans, 1, false, cameraView.data, 0);
         GLES20.glUniformMatrix4fv(glProject, 1, false, projectionMatrix.data, 0);
         GLES20.glEnableVertexAttribArray(glPosition);
@@ -144,16 +167,20 @@ public class ImageRenderer {
         GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, leftPos);
         GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        createTexture(middleBitmap, 1);
+        //绘制识别目标中间图片
+        GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, middlePos);
+        GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
         GLES20.glDisable(GLES20.GL_BLEND);
     }
 
-    private int createTexture() {
-        int[] texture = new int[1];
+    private int createTexture(Bitmap bitmap, int texturesIndex) {
         if (bitmap != null && !bitmap.isRecycled()) {
             //生成纹理
-            GLES20.glGenTextures(1, texture, 0);
+            GLES20.glGenTextures(1, texture, texturesIndex);
             //生成纹理
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[0]);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[texturesIndex]);
             //设置缩小过滤为使用纹理中坐标最接近的一个像素的颜色作为需要绘制的像素颜色
             GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
             //设置放大过滤为使用纹理中坐标最接近的若干个颜色，通过加权平均算法得到需要绘制的像素颜色
@@ -164,31 +191,33 @@ public class ImageRenderer {
             GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
             //根据以上指定的参数，生成一个2D纹理
             GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
-            return texture[0];
+            return texture[texturesIndex];
         }
-        return 0;
+        return texturesIndex;
     }
 
     private Bitmap drawTextToBitmap(Context context, String content) {
-        Bitmap bitmap = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_4444);
-        // get a canvas to paint over the bitmap
-        Canvas canvas = new Canvas(bitmap);
-        bitmap.eraseColor(Color.TRANSPARENT);
+        Bitmap wordBitmap = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_4444);
+        // get a canvas to paint over the wordBitmap
+        Canvas canvas = new Canvas(wordBitmap);
+        wordBitmap.eraseColor(Color.TRANSPARENT);
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         TextView tv = new TextView(context);
         tv.setTextColor(Color.BLUE);
         tv.setTextSize(6);
         tv.setText(content);
         tv.setEllipsize(TextUtils.TruncateAt.END);
+        //TODO
+        //tv.setBackgroundColor(Color.RED);
         //tv.setMaxLines(4);
         tv.setGravity(Gravity.TOP);
         tv.setPadding(0, 0, 0, 0);
         tv.setDrawingCacheEnabled(true);
-        tv.measure(View.MeasureSpec.makeMeasureSpec(canvas.getWidth(), View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(canvas.getHeight(), View.MeasureSpec.EXACTLY));
+        tv.measure(View.MeasureSpec.makeMeasureSpec(canvas.getWidth(), View.MeasureSpec.AT_MOST),
+                View.MeasureSpec.makeMeasureSpec(canvas.getHeight(), View.MeasureSpec.AT_MOST));
         tv.layout(0, 0, tv.getMeasuredWidth(), tv.getMeasuredHeight());
         LinearLayout parent = null;
-        if (!bitmap.isRecycled()) {
+        if (!wordBitmap.isRecycled()) {
             parent = new LinearLayout(context);
             parent.setDrawingCacheEnabled(true);
             parent.measure(View.MeasureSpec.makeMeasureSpec(canvas.getWidth(),
@@ -200,6 +229,8 @@ public class ImageRenderer {
                     LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
             parent.setOrientation(LinearLayout.VERTICAL);
             parent.setBackgroundColor(context.getResources().getColor(R.color.transparent));
+            //TODO
+            //parent.setBackgroundColor(Color.GREEN);
             parent.addView(tv);
         }
         canvas.drawBitmap(parent.getDrawingCache(), 0, 0, new Paint());
@@ -208,7 +239,7 @@ public class ImageRenderer {
         Matrix matrix = new Matrix();
         matrix.postScale(1, -1);
         matrix.postRotate(180);
-        Bitmap resultBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        Bitmap resultBitmap = Bitmap.createBitmap(wordBitmap, 0, 0, wordBitmap.getWidth(), wordBitmap.getHeight(), matrix, true);
         return resultBitmap;
     }
 

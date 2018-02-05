@@ -198,7 +198,7 @@ public class ArLocal {
                 if (status == TargetStatus.Tracked) {
                     Target target = targetInstance.target();
                     String metaStr = new String(Base64.decode(target.meta().getBytes(), Base64.DEFAULT));
-                    Log.d(TAG, "render: " + target.name());
+                    Log.d(TAG, "render: " + target.name() + "-->" + target.uid());
                     ImageTarget imagetarget = target instanceof ImageTarget ? (ImageTarget) (target) : null;
                     if (imagetarget == null) {
                         continue;
