@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
         void onFailure();
     }
 
-    private HashMap<Integer, PermissionCallback> permissionCallbacks = new HashMap<Integer, PermissionCallback>();
+    private HashMap<Integer, PermissionCallback> permissionCallbacks = new HashMap<>();
     private int permissionRequestCodeSerial = 0;
 
     @TargetApi(23)

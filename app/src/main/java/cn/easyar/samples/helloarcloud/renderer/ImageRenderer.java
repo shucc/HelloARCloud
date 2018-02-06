@@ -26,7 +26,7 @@ import cn.easyar.Matrix44F;
 import cn.easyar.Vec2F;
 import cn.easyar.samples.helloarcloud.App;
 import cn.easyar.samples.helloarcloud.R;
-import cn.easyar.samples.helloarcloud.utils.ShaderUtils;
+import cn.easyar.samples.helloarcloud.utils.RawUtils;
 
 /**
  * Created by shucc on 18/1/29.
@@ -46,11 +46,10 @@ public class ImageRenderer {
 
     private FloatBuffer rightPos;
     private FloatBuffer leftPos;
-    private FloatBuffer middlePos;
     private FloatBuffer bCoord;
 
-    private Bitmap wordBitmap;
-    private Bitmap middleBitmap;
+    private Bitmap leftWordBitmap;
+    private Bitmap rightWordBitmap;
 
     private int glPosition;
     private int glCoordinate;
@@ -66,15 +65,6 @@ public class ImageRenderer {
 
     public ImageRenderer(Activity activity) {
         this.activity = activity;
-        try {
-            Bitmap bitmap = BitmapFactory.decodeStream(activity.getResources().getAssets().open("award.png"));
-            Matrix matrix = new Matrix();
-            matrix.postScale(1, -1);
-            matrix.postRotate(180);
-            middleBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         bCoord = ByteBuffer.allocateDirect(sCoord.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer()
@@ -84,8 +74,8 @@ public class ImageRenderer {
 
     public void init() {
         GLES20.glEnable(GLES20.GL_TEXTURE_2D);
-        int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, ShaderUtils.loadShader(App.getInstance(), R.raw.image_vertex));
-        int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, ShaderUtils.loadShader(App.getInstance(), R.raw.image_frag));
+        int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, RawUtils.loadRaw(R.raw.image_vertex));
+        int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, RawUtils.loadRaw(R.raw.image_frag));
         //创建一个空的OpenGL ES程序
         int program = GLES20.glCreateProgram();
         //顶点着色器加入到程序
@@ -103,7 +93,7 @@ public class ImageRenderer {
         glProject = GLES20.glGetUniformLocation(program, "proj");
     }
 
-    public void render(Matrix44F projectionMatrix, Matrix44F cameraView, Vec2F size, String content, String uid) {
+    public void render(Matrix44F projectionMatrix, Matrix44F cameraView, Vec2F size, String leftContent, String rightContent, String uid) {
         //设置防止绘制的图片的背景为透明
         //开启混合
         GLES20.glEnable(GLES20.GL_BLEND);
@@ -126,13 +116,6 @@ public class ImageRenderer {
                     size0 / 2 + size0, size1 / 2,   //右上角
                     size0 / 2 + size0, -size1 / 2   //右下角
             };
-            float middleProportion = (float) middleBitmap.getHeight() / middleBitmap.getWidth();
-            float[] middleOriginPos = new float[]{
-                    -size0 / 4, size0 * middleProportion / 4,  //左上角
-                    -size0 / 4, -size0 * middleProportion / 4, //左下角
-                    size0 / 4, size0 * middleProportion / 4,   //右上角
-                    size0 / 4, -size0 * middleProportion / 4   //右下角
-            };
             rightPos = ByteBuffer.allocateDirect(rightOriginPos.length * 4)
                     .order(ByteOrder.nativeOrder())
                     .asFloatBuffer()
@@ -143,34 +126,26 @@ public class ImageRenderer {
                     .asFloatBuffer()
                     .put(leftOriginPos);
             leftPos.position(0);
-            middlePos = ByteBuffer.allocateDirect(middleOriginPos.length * 4)
-                    .order(ByteOrder.nativeOrder())
-                    .asFloatBuffer()
-                    .put(middleOriginPos);
-            middlePos.position(0);
-            wordBitmap = null;
-            wordBitmap = drawTextToBitmap(App.getInstance(), content);
+            leftWordBitmap = loadResultBitmap(true);
+            //leftWordBitmap = drawTextToBitmap(App.getInstance(), leftContent, size0, size1);
+            rightWordBitmap = loadResultBitmap(false);
+            //rightWordBitmap = drawTextToBitmap(App.getInstance(), rightContent, size0, size1);
         }
-        createTexture(wordBitmap, 0);
         GLES20.glUniformMatrix4fv(glTrans, 1, false, cameraView.data, 0);
         GLES20.glUniformMatrix4fv(glProject, 1, false, projectionMatrix.data, 0);
         GLES20.glEnableVertexAttribArray(glPosition);
         GLES20.glEnableVertexAttribArray(glCoordinate);
         GLES20.glUniform1i(glTexture, 0);
-        //绘制识别目标右边图片
-        GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, rightPos);
-        GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        createTexture(leftWordBitmap, 0);
         //绘制识别目标左边图片
         GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, leftPos);
         GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-        createTexture(middleBitmap, 1);
-        //绘制识别目标中间图片
-        GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, middlePos);
+        createTexture(rightWordBitmap, 1);
+        //绘制识别目标右边图片
+        GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, rightPos);
         GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-        GLES20.glDisable(GLES20.GL_BLEND);
     }
 
     private int createTexture(Bitmap bitmap, int texturesIndex) {
@@ -194,20 +169,17 @@ public class ImageRenderer {
         return texturesIndex;
     }
 
-    private Bitmap drawTextToBitmap(Context context, String content) {
-        Bitmap wordBitmap = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_4444);
-        // get a canvas to paint over the wordBitmap
-        Canvas canvas = new Canvas(wordBitmap);
-        wordBitmap.eraseColor(Color.TRANSPARENT);
+    private Bitmap drawTextToBitmap(Context context, String content, float size0, float size1) {
+        Bitmap leftWordBitmap = Bitmap.createBitmap(512, (int) (512 * size1 / size0), Bitmap.Config.ARGB_4444);
+        // get a canvas to paint over the leftWordBitmap
+        Canvas canvas = new Canvas(leftWordBitmap);
+        leftWordBitmap.eraseColor(Color.TRANSPARENT);
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         TextView tv = new TextView(context);
         tv.setTextColor(Color.BLUE);
-        tv.setTextSize(12);
+        tv.setTextSize(8);
         tv.setText(content);
         tv.setEllipsize(TextUtils.TruncateAt.END);
-        //TODO
-        //tv.setBackgroundColor(Color.RED);
-        //tv.setMaxLines(4);
         tv.setGravity(Gravity.TOP);
         tv.setPadding(0, 0, 0, 0);
         tv.setDrawingCacheEnabled(true);
@@ -215,7 +187,7 @@ public class ImageRenderer {
                 View.MeasureSpec.makeMeasureSpec(canvas.getHeight(), View.MeasureSpec.AT_MOST));
         tv.layout(0, 0, tv.getMeasuredWidth(), tv.getMeasuredHeight());
         LinearLayout parent = null;
-        if (!wordBitmap.isRecycled()) {
+        if (!leftWordBitmap.isRecycled()) {
             parent = new LinearLayout(context);
             parent.setDrawingCacheEnabled(true);
             parent.measure(View.MeasureSpec.makeMeasureSpec(canvas.getWidth(),
@@ -227,8 +199,6 @@ public class ImageRenderer {
                     LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
             parent.setOrientation(LinearLayout.VERTICAL);
             parent.setBackgroundColor(context.getResources().getColor(R.color.transparent));
-            //TODO
-            //parent.setBackgroundColor(Color.GREEN);
             parent.addView(tv);
         }
         canvas.drawBitmap(parent.getDrawingCache(), 0, 0, new Paint());
@@ -237,7 +207,21 @@ public class ImageRenderer {
         Matrix matrix = new Matrix();
         matrix.postScale(1, -1);
         matrix.postRotate(180);
-        Bitmap resultBitmap = Bitmap.createBitmap(wordBitmap, 0, 0, wordBitmap.getWidth(), wordBitmap.getHeight(), matrix, true);
+        Bitmap resultBitmap = Bitmap.createBitmap(leftWordBitmap, 0, 0, leftWordBitmap.getWidth(), leftWordBitmap.getHeight(), matrix, true);
+        return resultBitmap;
+    }
+
+    private Bitmap loadResultBitmap(boolean isLeft) {
+        Bitmap resultBitmap = null;
+        try {
+            Bitmap bitmap = BitmapFactory.decodeStream(activity.getResources().getAssets().open(isLeft ? "one_result_left.png" : "one_result_right.png"));
+            Matrix matrix = new Matrix();
+            matrix.postScale(1, -1);
+            matrix.postRotate(180);
+            resultBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return resultBitmap;
     }
 

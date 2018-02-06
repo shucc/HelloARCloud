@@ -2,22 +2,17 @@ package cn.easyar.samples.helloarcloud;
 
 import android.app.Activity;
 import android.opengl.GLES20;
-import android.util.Base64;
+import android.text.TextUtils;
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 import cn.easyar.CameraCalibration;
 import cn.easyar.CameraDevice;
 import cn.easyar.CameraDeviceFocusMode;
 import cn.easyar.CameraDeviceType;
 import cn.easyar.CameraFrameStreamer;
-import cn.easyar.CloudRecognizer;
-import cn.easyar.CloudStatus;
 import cn.easyar.Frame;
-import cn.easyar.FunctorOfVoidFromCloudStatus;
-import cn.easyar.FunctorOfVoidFromCloudStatusAndListOfPointerOfTarget;
 import cn.easyar.FunctorOfVoidFromPointerOfTargetAndBool;
 import cn.easyar.ImageTarget;
 import cn.easyar.ImageTracker;
@@ -28,7 +23,10 @@ import cn.easyar.TargetInstance;
 import cn.easyar.TargetStatus;
 import cn.easyar.Vec2I;
 import cn.easyar.Vec4I;
+import cn.easyar.samples.helloarcloud.model.MetaModel;
 import cn.easyar.samples.helloarcloud.renderer.ImageRenderer;
+import cn.easyar.samples.helloarcloud.utils.AssetsUtils;
+import cn.easyar.samples.helloarcloud.utils.JsonUtils;
 
 /**
  * Created by shucc on 18/2/2.
@@ -57,6 +55,8 @@ public class ArLocal {
     private Vec4I viewport = new Vec4I(0, 0, 1280, 720);
 
     private Activity activity;
+
+    private String nowUid;
 
     public ArLocal(Activity activity) {
         this.activity = activity;
@@ -201,17 +201,23 @@ public class ArLocal {
                     if (imagetarget == null) {
                         continue;
                     }
-                    String metaStr = "";
                     String uid = target.uid();
-                    if ("00001".equals(uid)) {
-                        metaStr = "君不见黄河之水天上来，奔流到海不复回。君不见高堂明镜悲白发，朝如青丝暮成雪。";
-                    } else if ("00002".equals(uid)) {
-                        metaStr = "纳克萨玛斯，我要出末日决战啊啊啊";
-                    } else if ("00003".equals(uid)) {
-                        metaStr = "瓦里安·乌瑞恩，至高王，暴风城老大，死在破碎海滩。";
+                    if (!TextUtils.isEmpty(nowUid) && !TextUtils.isEmpty(uid) && nowUid.equals(uid)) {
+                        return;
                     }
-                    if (targetRenderer != null) {
-                        targetRenderer.render(cameraDevice.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size(), metaStr, target.uid());
+                    MetaModel metaModel = null;
+                    if ("00001".equals(uid)) {
+                        metaModel = JsonUtils.toObject(AssetsUtils.loadAssets("one.json"), MetaModel.class);
+                    } else if ("00002".equals(uid)) {
+                        metaModel = JsonUtils.toObject(AssetsUtils.loadAssets("two.json"), MetaModel.class);
+                    } else if ("00003".equals(uid)) {
+                        metaModel = JsonUtils.toObject(AssetsUtils.loadAssets("three.json"), MetaModel.class);
+                    } else if ("00004".equals(uid)) {
+                        metaModel = JsonUtils.toObject(AssetsUtils.loadAssets("four.json"), MetaModel.class);
+                    }
+                    if (targetRenderer != null && null != metaModel) {
+                        targetRenderer.render(cameraDevice.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size()
+                                , metaModel.getLeft(), metaModel.getRight(), target.uid());
                     }
                 }
             }

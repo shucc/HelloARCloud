@@ -18,7 +18,6 @@ import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.opengles.GL10;
 
 import cn.easyar.Engine;
-import cn.easyar.samples.helloarcloud.ArCloud;
 import cn.easyar.samples.helloarcloud.ArLocal;
 
 public class GLView extends GLSurfaceView {

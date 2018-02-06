@@ -8,20 +8,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import cn.easyar.samples.helloarcloud.App;
+
 /**
  * Created by shucc on 18/1/25.
  * cc@cchao.org
  */
-public class ShaderUtils {
+public class RawUtils {
 
-    private ShaderUtils() {
+    private RawUtils() {
         // util
     }
 
-    public static String loadShader(Context context, @RawRes int resId) {
+    public static String loadRaw(@RawRes int resId) {
         StringBuilder builder = new StringBuilder();
         try {
-            InputStream inputStream = context.getResources().openRawResource(resId);
+            InputStream inputStream = App.getInstance().getResources().openRawResource(resId);
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             String line;
             while ((line = reader.readLine()) != null) {

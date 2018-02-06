@@ -2,19 +2,24 @@
   "images":
   [
     {
-      "image":"cat.png",
-      "name":"cat",
+      "image":"one.png",
+      "name":"one",
       "uid":"00001"
     },
     {
-      "image":"naxx.jpg",
-      "name":"naxx",
+      "image":"two.png",
+      "name":"two",
       "uid":"00002"
     },
     {
-      "image":"varian.jpg",
-      "name":"varian",
+      "image":"three.png",
+      "name":"three",
       "uid":"00003"
+    },
+    {
+      "image":"four.jpg",
+      "name":"four",
+      "uid":"00004"
     }
   ]
 }

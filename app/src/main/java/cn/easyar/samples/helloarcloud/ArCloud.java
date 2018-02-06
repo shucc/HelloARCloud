@@ -246,7 +246,7 @@ public class ArCloud {
                         continue;
                     }
                     if (targetRenderer != null) {
-                        targetRenderer.render(cameraDevice.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size(), metaStr, target.uid());
+                        targetRenderer.render(cameraDevice.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size(), metaStr, metaStr, target.uid());
                     }
                 }
             }
