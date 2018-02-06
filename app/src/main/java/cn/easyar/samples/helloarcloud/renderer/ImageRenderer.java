@@ -67,7 +67,7 @@ public class ImageRenderer {
     public ImageRenderer(Activity activity) {
         this.activity = activity;
         try {
-            Bitmap bitmap = BitmapFactory.decodeStream(activity.getResources().getAssets().open("bg_award.png"));
+            Bitmap bitmap = BitmapFactory.decodeStream(activity.getResources().getAssets().open("award.png"));
             Matrix matrix = new Matrix();
             matrix.postScale(1, -1);
             matrix.postRotate(180);
@@ -96,7 +96,6 @@ public class ImageRenderer {
         GLES20.glLinkProgram(program);
         //将程序加入到OpenGL ES 2.0环境
         GLES20.glUseProgram(program);
-
         glPosition = GLES20.glGetAttribLocation(program, "vPosition");
         glCoordinate = GLES20.glGetAttribLocation(program, "vCoordinate");
         glTexture = GLES20.glGetUniformLocation(program, "vTexture");
@@ -128,11 +127,11 @@ public class ImageRenderer {
                     size0 / 2 + size0, -size1 / 2   //右下角
             };
             float middleProportion = (float) middleBitmap.getHeight() / middleBitmap.getWidth();
-            float[] middleOriginPos = new float[] {
-                    -size0 / 2, size0 * middleProportion / 2,  //左上角
-                    -size0 / 2, -size0 * middleProportion  / 2, //左下角
-                    size0 / 2, size0 * middleProportion  / 2,   //右上角
-                    size0 / 2, -size0 * middleProportion  / 2   //右下角
+            float[] middleOriginPos = new float[]{
+                    -size0 / 4, size0 * middleProportion / 4,  //左上角
+                    -size0 / 4, -size0 * middleProportion / 4, //左下角
+                    size0 / 4, size0 * middleProportion / 4,   //右上角
+                    size0 / 4, -size0 * middleProportion / 4   //右下角
             };
             rightPos = ByteBuffer.allocateDirect(rightOriginPos.length * 4)
                     .order(ByteOrder.nativeOrder())
@@ -152,7 +151,6 @@ public class ImageRenderer {
             wordBitmap = null;
             wordBitmap = drawTextToBitmap(App.getInstance(), content);
         }
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         createTexture(wordBitmap, 0);
         GLES20.glUniformMatrix4fv(glTrans, 1, false, cameraView.data, 0);
         GLES20.glUniformMatrix4fv(glProject, 1, false, projectionMatrix.data, 0);
@@ -204,7 +202,7 @@ public class ImageRenderer {
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         TextView tv = new TextView(context);
         tv.setTextColor(Color.BLUE);
-        tv.setTextSize(6);
+        tv.setTextSize(12);
         tv.setText(content);
         tv.setEllipsize(TextUtils.TruncateAt.END);
         //TODO

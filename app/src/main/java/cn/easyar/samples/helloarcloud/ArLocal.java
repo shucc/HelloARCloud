@@ -197,15 +197,22 @@ public class ArLocal {
                 int status = targetInstance.status();
                 if (status == TargetStatus.Tracked) {
                     Target target = targetInstance.target();
-                    String metaStr = new String(Base64.decode(target.meta().getBytes(), Base64.DEFAULT));
-                    Log.d(TAG, "render: " + target.name() + "-->" + target.uid());
                     ImageTarget imagetarget = target instanceof ImageTarget ? (ImageTarget) (target) : null;
                     if (imagetarget == null) {
                         continue;
                     }
-//                    if (targetRenderer != null) {
-//                        targetRenderer.render(cameraDevice.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size(), metaStr, target.uid());
-//                    }
+                    String metaStr = "";
+                    String uid = target.uid();
+                    if ("00001".equals(uid)) {
+                        metaStr = "君不见黄河之水天上来，奔流到海不复回。君不见高堂明镜悲白发，朝如青丝暮成雪。";
+                    } else if ("00002".equals(uid)) {
+                        metaStr = "纳克萨玛斯，我要出末日决战啊啊啊";
+                    } else if ("00003".equals(uid)) {
+                        metaStr = "瓦里安·乌瑞恩，至高王，暴风城老大，死在破碎海滩。";
+                    }
+                    if (targetRenderer != null) {
+                        targetRenderer.render(cameraDevice.projectionGL(0.2f, 500.f), targetInstance.poseGL(), imagetarget.size(), metaStr, target.uid());
+                    }
                 }
             }
         } finally {

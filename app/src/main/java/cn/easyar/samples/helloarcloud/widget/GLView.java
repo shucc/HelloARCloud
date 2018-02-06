@@ -23,7 +23,7 @@ import cn.easyar.samples.helloarcloud.ArLocal;
 
 public class GLView extends GLSurfaceView {
 
-    private ArCloud arCloud;
+    private ArLocal arCloud;
 
     private String cloudServerAddress;
 
@@ -43,7 +43,7 @@ public class GLView extends GLSurfaceView {
         //getHolder().setFormat(PixelFormat.TRANSLUCENT);
         //setZOrderOnTop(true);
 
-        arCloud = new ArCloud(activity);
+        arCloud = new ArLocal(activity);
 
         this.setRenderer(new Renderer() {
             @Override

@@ -42,23 +42,23 @@ public class ArCloud {
     private final String TAG = getClass().getName();
 
     private CameraDevice cameraDevice;
-    
+
     private CameraFrameStreamer cameraFrameStreamer;
-    
+
     private ArrayList<ImageTracker> trackers;
-    
+
     private Renderer bgRenderer;
-    
+
     private ImageRenderer targetRenderer;
-    
+
     private CloudRecognizer cloudRecognizer;
-    
+
     private boolean viewPortChanged = false;
-    
+
     private Vec2I viewSize = new Vec2I(0, 0);
-    
+
     private int rotation = 0;
-    
+
     private Vec4I viewport = new Vec4I(0, 0, 1280, 720);
 
     private Activity activity;

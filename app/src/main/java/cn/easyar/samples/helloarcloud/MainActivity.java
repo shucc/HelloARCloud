@@ -29,8 +29,11 @@ import cn.easyar.samples.helloarcloud.widget.GLView;
 public class MainActivity extends AppCompatActivity {
 
     private final String KEY = "Etya2911FlNtVwhDnHkgNiKDwjDVrqRIIL6sbw3UqUr8JAPdqzdPiqnIhx9JnaV67hNsxlBevlTITsAo47D8G10ycnfU3MauNqBXyJXJaxlTXhlr4BNsuO3JdTjhhg35AWlPRwxbABPAJXX9A6l7CEnao78I3Xd7CDTDOGX7tV65KH49g0qZdQ1R7TND9n3gQARiU30F";
+
     private final String CLOUD_SERVER_ADDRESS = "0f14ca21dd9a6f8ff9e150a0a823049b.cn1.crs.easyar.com:8080";
+
     private final String CLOUD_KEY = "1dd1bef1b0530cce010ab4789b1b41a5";
+
     private final String CLOUD_SECRET = "34o8luN03SfF3AHJUjWmrUTEJNQEmWB0TKpZ7g7fROUSm0XSpHrrsX6rcyQ09arTBccqnrx5MKmyv1amnCePypUB50FQbHrP7d5kDth49tKfbsQZDuvchNKDl3WNXf0z";
 
     private GLView glView;
