@@ -1,7 +1,6 @@
 package cn.easyar.samples.helloarcloud.renderer;
 
 import android.app.Activity;
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -12,7 +11,6 @@ import android.graphics.PorterDuff;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -25,7 +23,6 @@ import java.nio.FloatBuffer;
 
 import cn.easyar.Matrix44F;
 import cn.easyar.Vec2F;
-import cn.easyar.samples.helloarcloud.App;
 import cn.easyar.samples.helloarcloud.R;
 import cn.easyar.samples.helloarcloud.utils.RawUtils;
 
@@ -62,7 +59,7 @@ public class ImageRenderer {
 
     private Activity activity;
 
-   // private int[] texture = new int[2];
+    private int[] texture = new int[2];
 
     public ImageRenderer(Activity activity) {
         this.activity = activity;
@@ -129,40 +126,43 @@ public class ImageRenderer {
                     .put(leftOriginPos);
             leftPos.position(0);
             leftWordBitmap = loadResultBitmap(true);
-            //leftWordBitmap = drawTextToBitmap(App.getInstance(), leftContent, size0, size1);
+            //leftWordBitmap = drawTextToBitmap(leftContent, size0, size1);
             rightWordBitmap = loadResultBitmap(false);
-            //rightWordBitmap = drawTextToBitmap(App.getInstance(), rightContent, size0, size1);
+            //rightWordBitmap = drawTextToBitmap(rightContent, size0, size1);
         }
-        createTexture(leftWordBitmap, 0);
         GLES20.glUniformMatrix4fv(glTrans, 1, false, cameraView.data, 0);
         GLES20.glUniformMatrix4fv(glProject, 1, false, projectionMatrix.data, 0);
         GLES20.glEnableVertexAttribArray(glPosition);
         GLES20.glEnableVertexAttribArray(glCoordinate);
         GLES20.glUniform1i(glTexture, 0);
+        if (isChange) {
+            createTexture(leftWordBitmap, 0);
+        } else {
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[0]);
+        }
         //GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         //绘制识别目标左边图片
         GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, leftPos);
         GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-//        if (isChange) {
-//            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[1]);
-//        } else {
-//            createTexture(rightWordBitmap, 1);
-//        }
-//        //绘制识别目标右边图片
-//        GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, rightPos);
-//        GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
-//        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        if (isChange) {
+            createTexture(rightWordBitmap, 1);
+        } else {
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[1]);
+        }
+        //绘制识别目标右边图片
+        GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, rightPos);
+        GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
         GLES20.glDisable(GLES20.GL_BLEND);
     }
 
     private int createTexture(Bitmap bitmap, int texturesIndex) {
-        int[] texture = new int[1];
         if (bitmap != null && !bitmap.isRecycled()) {
             //生成纹理
-            GLES20.glGenTextures(1, texture, 0);
+            GLES20.glGenTextures(1, texture, texturesIndex);
             //生成纹理
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[0]);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[texturesIndex]);
             //设置缩小过滤为使用纹理中坐标最接近的一个像素的颜色作为需要绘制的像素颜色
             GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
             //设置放大过滤为使用纹理中坐标最接近的若干个颜色，通过加权平均算法得到需要绘制的像素颜色
@@ -173,18 +173,18 @@ public class ImageRenderer {
             GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
             //根据以上指定的参数，生成一个2D纹理
             GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
-            return texture[0];
+            return texture[texturesIndex];
         }
-        return 0;
+        return texturesIndex;
     }
 
-    private Bitmap drawTextToBitmap(Context context, String content, float size0, float size1) {
+    private Bitmap drawTextToBitmap(String content, float size0, float size1) {
         Bitmap leftWordBitmap = Bitmap.createBitmap(512, (int) (512 * size1 / size0), Bitmap.Config.ARGB_4444);
         // get a canvas to paint over the leftWordBitmap
         Canvas canvas = new Canvas(leftWordBitmap);
         leftWordBitmap.eraseColor(Color.TRANSPARENT);
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-        TextView tv = new TextView(context);
+        TextView tv = new TextView(activity);
         tv.setTextColor(Color.BLUE);
         tv.setTextSize(8);
         tv.setText(content);
@@ -197,7 +197,7 @@ public class ImageRenderer {
         tv.layout(0, 0, tv.getMeasuredWidth(), tv.getMeasuredHeight());
         LinearLayout parent = null;
         if (!leftWordBitmap.isRecycled()) {
-            parent = new LinearLayout(context);
+            parent = new LinearLayout(activity);
             parent.setDrawingCacheEnabled(true);
             parent.measure(View.MeasureSpec.makeMeasureSpec(canvas.getWidth(),
                     View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(
@@ -207,7 +207,7 @@ public class ImageRenderer {
             parent.setLayoutParams(new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
             parent.setOrientation(LinearLayout.VERTICAL);
-            parent.setBackgroundColor(context.getResources().getColor(R.color.transparent));
+            parent.setBackgroundColor(activity.getResources().getColor(R.color.transparent));
             parent.addView(tv);
         }
         canvas.drawBitmap(parent.getDrawingCache(), 0, 0, new Paint());
