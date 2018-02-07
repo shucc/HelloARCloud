@@ -56,8 +56,6 @@ public class ArLocal {
 
     private Activity activity;
 
-    private String nowUid;
-
     public ArLocal(Activity activity) {
         this.activity = activity;
         trackers = new ArrayList<>();
@@ -202,9 +200,6 @@ public class ArLocal {
                         continue;
                     }
                     String uid = target.uid();
-                    if (!TextUtils.isEmpty(nowUid) && !TextUtils.isEmpty(uid) && nowUid.equals(uid)) {
-                        return;
-                    }
                     MetaModel metaModel = null;
                     if ("00001".equals(uid)) {
                         metaModel = JsonUtils.toObject(AssetsUtils.loadAssets("one.json"), MetaModel.class);

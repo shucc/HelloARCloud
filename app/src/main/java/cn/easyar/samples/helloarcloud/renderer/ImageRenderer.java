@@ -12,6 +12,7 @@ import android.graphics.PorterDuff;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -61,7 +62,7 @@ public class ImageRenderer {
 
     private Activity activity;
 
-    private int[] texture = new int[2];
+   // private int[] texture = new int[2];
 
     public ImageRenderer(Activity activity) {
         this.activity = activity;
@@ -99,7 +100,8 @@ public class ImageRenderer {
         GLES20.glEnable(GLES20.GL_BLEND);
         //设置混合因子
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
-        if (TextUtils.isEmpty(targetUid) || !targetUid.equals(uid)) {
+        boolean isChange = (TextUtils.isEmpty(targetUid) || !targetUid.equals(uid));
+        if (isChange) {
             targetUid = uid;
             float size0 = size.data[0];
             float size1 = size.data[1];
@@ -131,29 +133,36 @@ public class ImageRenderer {
             rightWordBitmap = loadResultBitmap(false);
             //rightWordBitmap = drawTextToBitmap(App.getInstance(), rightContent, size0, size1);
         }
+        createTexture(leftWordBitmap, 0);
         GLES20.glUniformMatrix4fv(glTrans, 1, false, cameraView.data, 0);
         GLES20.glUniformMatrix4fv(glProject, 1, false, projectionMatrix.data, 0);
         GLES20.glEnableVertexAttribArray(glPosition);
         GLES20.glEnableVertexAttribArray(glCoordinate);
         GLES20.glUniform1i(glTexture, 0);
-        createTexture(leftWordBitmap, 0);
+        //GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         //绘制识别目标左边图片
         GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, leftPos);
         GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-        createTexture(rightWordBitmap, 1);
-        //绘制识别目标右边图片
-        GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, rightPos);
-        GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+//        if (isChange) {
+//            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[1]);
+//        } else {
+//            createTexture(rightWordBitmap, 1);
+//        }
+//        //绘制识别目标右边图片
+//        GLES20.glVertexAttribPointer(glPosition, 2, GLES20.GL_FLOAT, false, 0, rightPos);
+//        GLES20.glVertexAttribPointer(glCoordinate, 2, GLES20.GL_FLOAT, false, 0, bCoord);
+//        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        GLES20.glDisable(GLES20.GL_BLEND);
     }
 
     private int createTexture(Bitmap bitmap, int texturesIndex) {
+        int[] texture = new int[1];
         if (bitmap != null && !bitmap.isRecycled()) {
             //生成纹理
-            GLES20.glGenTextures(1, texture, texturesIndex);
+            GLES20.glGenTextures(1, texture, 0);
             //生成纹理
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[texturesIndex]);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[0]);
             //设置缩小过滤为使用纹理中坐标最接近的一个像素的颜色作为需要绘制的像素颜色
             GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
             //设置放大过滤为使用纹理中坐标最接近的若干个颜色，通过加权平均算法得到需要绘制的像素颜色
@@ -164,9 +173,9 @@ public class ImageRenderer {
             GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
             //根据以上指定的参数，生成一个2D纹理
             GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
-            return texture[texturesIndex];
+            return texture[0];
         }
-        return texturesIndex;
+        return 0;
     }
 
     private Bitmap drawTextToBitmap(Context context, String content, float size0, float size1) {
